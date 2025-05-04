@@ -4,18 +4,12 @@ using UnityEngine.XR.Interaction.Toolkit.Utilities;
 
 namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
 {
-    /// <summary>
-    /// Behavior with an API for spawning objects from a given set of prefabs.
-    /// </summary>
     public class ObjectSpawner : MonoBehaviour
     {
         [SerializeField]
         [Tooltip("The camera that objects will face when spawned. If not set, defaults to the main camera.")]
         Camera m_CameraToFace;
 
-        /// <summary>
-        /// The camera that objects will face when spawned. If not set, defaults to the <see cref="Camera.main"/> camera.
-        /// </summary>
         public Camera cameraToFace
         {
             get
@@ -30,9 +24,6 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         [Tooltip("The list of prefabs available to spawn. Currently only the cat model.")]
         List<GameObject> m_ObjectPrefabs = new List<GameObject>();
 
-        /// <summary>
-        /// The list of prefabs available to spawn. Only includes the cat model now.
-        /// </summary>
         public List<GameObject> objectPrefabs
         {
             get => m_ObjectPrefabs;
@@ -44,10 +35,6 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
             "sure the visualization only lives temporarily.")]
         GameObject m_SpawnVisualizationPrefab;
 
-        /// <summary>
-        /// Optional prefab to spawn for each spawned object.
-        /// </summary>
-        /// <remarks>Use a prefab with <see cref="DestroySelf"/> to make sure the visualization only lives temporarily.</remarks>
         public GameObject spawnVisualizationPrefab
         {
             get => m_SpawnVisualizationPrefab;
@@ -58,28 +45,18 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         [Tooltip("The index of the prefab to spawn. This is set to 0 as we have only the cat model in the list.")]
         int m_SpawnOptionIndex = 0;
 
-        /// <summary>
-        /// The index of the prefab to spawn. Now always points to the cat model (index 0).
-        /// </summary>
         public int spawnOptionIndex
         {
             get => m_SpawnOptionIndex;
             set => m_SpawnOptionIndex = value;
         }
 
-        /// <summary>
-        /// Whether this behavior will select a random object from <see cref="objectPrefabs"/> each time it spawns.
-        /// We don't need randomization as we only have one object (the cat model).
-        /// </summary>
         public bool isSpawnOptionRandomized => m_SpawnOptionIndex < 0 || m_SpawnOptionIndex >= m_ObjectPrefabs.Count;
 
         [SerializeField]
         [Tooltip("Whether to only spawn an object if the spawn point is within view of the camera.")]
         bool m_OnlySpawnInView = true;
 
-        /// <summary>
-        /// Whether to only spawn an object if the spawn point is within view of the <see cref="cameraToFace"/>.
-        /// </summary>
         public bool onlySpawnInView
         {
             get => m_OnlySpawnInView;
@@ -90,9 +67,6 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         [Tooltip("The size, in viewport units, of the periphery inside the viewport that will not be considered in view.")]
         float m_ViewportPeriphery = 0.15f;
 
-        /// <summary>
-        /// The size, in viewport units, of the periphery inside the viewport that will not be considered in view.
-        /// </summary>
         public float viewportPeriphery
         {
             get => m_ViewportPeriphery;
@@ -104,10 +78,6 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
             "in relation to the direction of the spawn point to the camera.")]
         bool m_ApplyRandomAngleAtSpawn = true;
 
-        /// <summary>
-        /// When enabled, the object will be rotated about the y-axis when spawned by <see cref="spawnAngleRange"/>
-        /// in relation to the direction of the spawn point to the camera.
-        /// </summary>
         public bool applyRandomAngleAtSpawn
         {
             get => m_ApplyRandomAngleAtSpawn;
@@ -119,10 +89,6 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
             "in relation to the direction of the spawn point to the camera.")]
         float m_SpawnAngleRange = 45f;
 
-        /// <summary>
-        /// The range in degrees that the object will randomly be rotated about the y axis when spawned, in relation
-        /// to the direction of the spawn point to the camera.
-        /// </summary>
         public float spawnAngleRange
         {
             get => m_SpawnAngleRange;
@@ -133,24 +99,17 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         [Tooltip("Whether to spawn each object as a child of this object.")]
         bool m_SpawnAsChildren;
 
-        /// <summary>
-        /// Whether to spawn each object as a child of this object.
-        /// </summary>
         public bool spawnAsChildren
         {
             get => m_SpawnAsChildren;
             set => m_SpawnAsChildren = value;
         }
 
-        /// <summary>
-        /// Event invoked after an object is spawned.
-        /// </summary>
-        /// <seealso cref="TrySpawnObject"/>
         public event Action<GameObject> objectSpawned;
 
-        /// <summary>
-        /// See <see cref="MonoBehaviour"/>.
-        /// </summary>
+        private bool hasSpawned = false;  // Flag to ensure spawning only once
+        private GameObject currentObject; // Track current spawned object
+
         void Awake()
         {
             EnsureFacingCamera();
@@ -162,15 +121,11 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
                 m_CameraToFace = Camera.main;
         }
 
-        /// <summary>
-        /// Attempts to spawn the cat object at the given position.
-        /// </summary>
-        /// <param name="spawnPoint">The world space position at which to spawn the object.</param>
-        /// <param name="spawnNormal">The world space normal of the spawn surface.</param>
-        /// <returns>Returns <see langword="true"/> if the spawner successfully spawned an object. Otherwise returns
-        /// <see langword="false"/>, for instance if the spawn point is out of view of the camera.</returns>
         public bool TrySpawnObject(Vector3 spawnPoint, Vector3 spawnNormal)
         {
+            if (hasSpawned)
+                return false;  // Prevent further spawning if already spawned
+
             if (m_OnlySpawnInView)
             {
                 var inViewMin = m_ViewportPeriphery;
@@ -183,7 +138,7 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
                 }
             }
 
-            // We always spawn the cat, since we removed other options
+            // Spawn the object
             var newObject = Instantiate(m_ObjectPrefabs[m_SpawnOptionIndex]);
             if (m_SpawnAsChildren)
                 newObject.transform.parent = transform;
@@ -210,7 +165,27 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
             }
 
             objectSpawned?.Invoke(newObject);
+
+            // Set flag to true to prevent further spawns
+            hasSpawned = true;
+
+            // Track the current spawned object
+            currentObject = newObject;
+
             return true;
+        }
+
+        // Method to remove the spawned object and reset the flag
+        public void RemoveAllObjects()
+        {
+            if (currentObject != null)
+            {
+                Destroy(currentObject);
+                currentObject = null;
+            }
+
+            // Reset the flag to allow spawning again
+            hasSpawned = false;
         }
     }
 }
